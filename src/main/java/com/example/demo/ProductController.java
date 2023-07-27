@@ -3,48 +3,60 @@ package com.example.demo;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 class ProductController {
 
-    private final ProductRepository repository;
+    private final ProductRepository productRepository;
 
-    ProductController(ProductRepository repository) {
-        this.repository = repository;
+    private final StockRepository stockRepository;
+
+    ProductController(ProductRepository productRepository, StockRepository stockRepository) {
+        this.productRepository = productRepository;
+        this.stockRepository = stockRepository;
     }
 
+
     @GetMapping("/products")
-    List<Product> all() {
-        return repository.findAll();
+    List<ProductAllDTO> all() {
+        List<Product> products = productRepository.findAll();
+        return products.stream()
+                .map(product -> {
+                    return new ProductAllDTO(product);
+                })
+                .toList();
     }
 
     @PostMapping("/products")
     Product newProduct(@RequestBody Product newProduct) {
-        return repository.save(newProduct);
+        newProduct = productRepository.save(newProduct);
+        Stock stock = new Stock();
+        stock.setStock(0);
+        stock.setId(newProduct.getId());
+        stockRepository.save(stock);
+        return newProduct;
     }
 
     @GetMapping("/product/{id}")
-    Product one(@PathVariable Long id) {
-        return repository.findById(id)
+    ProductByIdDTO one(@PathVariable Long id) {
+        Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
+        return new ProductByIdDTO(product);
     }
 
     @PutMapping("/product/{id}")
-    Product replaceProduct(@RequestBody Product newProduct, @PathVariable Long id) {
-        return repository.findById(id)
-                .map(product -> {
-                    product.setName(newProduct.getName());
-                    product.setPrice(newProduct.getPrice());
-                    return repository.save(product);
-                })
-                .orElseGet(() -> {
-                    newProduct.setId(id);
-                    return repository.save(newProduct);
+    Optional<Stock> replaceStock(@RequestBody Stock newStock, @PathVariable Long id) {
+        return stockRepository.findById(id)
+                .map(stock -> {
+                    stock.setStock(newStock.getStock());
+                    return stockRepository.save(stock);
                 });
     }
 
     @DeleteMapping("/product/{id}")
     void deleteProduct(@PathVariable Long id) {
-        repository.deleteById(id);
+        stockRepository.deleteById(id);
+        productRepository.deleteById(id);
     }
 }

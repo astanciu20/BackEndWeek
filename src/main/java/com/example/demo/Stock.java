@@ -13,7 +13,6 @@ public class Stock {
 
     @OneToOne
     @JoinColumn(name = "product_id")
-    @MapsId
     private Product product;
 
     public Long getId() {
