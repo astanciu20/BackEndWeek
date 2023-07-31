@@ -54,6 +54,16 @@ class ProductController {
                 });
     }
 
+    @PutMapping("/products/{id}")
+    Optional<Product> replaceProduct(@RequestBody Product newProduct, @PathVariable Long id) {
+        return productRepository.findById(id)
+                .map(product -> {
+                    product.setName(newProduct.getName());
+                    product.setPrice(newProduct.getPrice());
+                    return productRepository.save(product);
+                });
+    }
+
     @DeleteMapping("/product/{id}")
     void deleteProduct(@PathVariable Long id) {
         stockRepository.deleteById(id);
